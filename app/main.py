@@ -1,4 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Query
+from app.schemas import (
+    TokenGenerationRequest,
+    TokenGenerationResponse,
+    LogItem,
+    LogCreateResponse,
+    LogsListResponse,
+    HealthCheckResponse,
+)
+import json
 
 """
 Модуль main: Основное FastAPI приложение для хранения логов и управления токенами
@@ -18,9 +27,28 @@ from datetime import datetime, timezone, timedelta
 import secrets, os
 from app.db import get_db
 from app.auth import get_token_info
-from app.utils import hash_token
+from app.utils import hash_token, fix_plus_sign
 
 app = FastAPI(title="Log Storage Service (FastAPI)")
+
+
+@app.get("/healthcheck", include_in_schema=False, response_model=HealthCheckResponse)
+async def health_check():
+    """
+    Health check endpoint to verify service and database connectivity
+    Returns:
+        HealthCheckResponse: Status and database connection status
+    """
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return HealthCheckResponse(status="ok", database="connected")
+    except Exception as e:
+        return HealthCheckResponse(
+            status="error", database="disconnected", error=str(e)
+        )
+
 
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", "30"))
 
@@ -53,14 +81,14 @@ async def startup():
     await get_db()
 
 
-@app.post("/api/v1/tokens/generate")
-async def generate_token(request: Request, auth=Depends(get_token_info)):
+@app.post("/api/v1/tokens/generate", response_model=TokenGenerationResponse)
+async def generate_token(request: TokenGenerationRequest, auth=Depends(get_token_info)):
     """
     Генерация нового API токена (доступно только администраторам)
 
-    Параметры запроса (JSON):
+    Параметры запроса:
       - role: Роль токена (admin/user)
-      - comment: Комментарий к токену
+      - comment: Комментарий к токену (опционально)
       - expires_at: Дата истечения срока действия (опционально)
 
     Возвращает:
@@ -73,10 +101,10 @@ async def generate_token(request: Request, auth=Depends(get_token_info)):
     """
     if auth["role"] != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
-    body = await request.json()
-    role = body.get("role")
-    if role not in ("admin", "user"):
+
+    if request.role not in ("admin", "user"):
         raise HTTPException(status_code=400, detail="Invalid role")
+
     raw_token = secrets.token_urlsafe(32)
     hashed = hash_token(raw_token)
     pool = await get_db()
@@ -84,22 +112,18 @@ async def generate_token(request: Request, auth=Depends(get_token_info)):
         await conn.execute(
             "INSERT INTO api_tokens (token_hash, role, comment, expires_at, created_by) VALUES ($1,$2,$3,$4,$5)",
             hashed,
-            role,
-            body.get("comment"),
-            body.get("expires_at"),
+            request.role,
+            request.comment,
+            request.expires_at,
             "admin_api",
         )
-    return {"token": raw_token, "role": role}
+    return TokenGenerationResponse(token=raw_token, role=request.role)
 
 
-@app.post("/api/v1/logs")
-async def create_log(request: Request, auth=Depends(get_token_info)):
+@app.post("/api/v1/logs", response_model=LogCreateResponse)
+async def create_log(request: LogItem, auth=Depends(get_token_info)):
     """
     Создание новой записи лога (доступно всем авторизованным пользователям)
-
-    Поддерживаемые форматы тела запроса:
-      1. Массив из 14 элементов строго по порядку (POST_ORDER)
-      2. Объект (именованный JSON)
 
     Возвращает:
       - id: Идентификатор созданной записи
@@ -108,16 +132,6 @@ async def create_log(request: Request, auth=Depends(get_token_info)):
     Дополнительно:
       - Автоматически удаляет записи старше RETENTION_DAYS дней
     """
-    body = await request.json()
-    if isinstance(body, list):
-        if len(body) != 14:
-            raise HTTPException(status_code=400, detail="Array must have 14 elements")
-        payload = dict(zip(POST_ORDER, body))
-    elif isinstance(body, dict):
-        payload = {k: body.get(k) for k in POST_ORDER}
-    else:
-        raise HTTPException(status_code=400, detail="Invalid body format")
-
     pool = await get_db()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -131,26 +145,26 @@ async def create_log(request: Request, auth=Depends(get_token_info)):
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
             ) RETURNING id, created_at
             """,
-            payload["unique_channel_number"],
-            payload["unique_client_number"],
-            payload["client_phrase"],
-            payload["bot_phrase"],
-            payload["channel_name"],
-            payload["bot_number"],
-            payload["llm"],
-            payload["api_key_masked"],
-            payload["tokens_spent_smaipl"],
-            payload["inbound_without_coefficient"],
-            payload["outbound_without_coefficient"],
-            payload["function_error"],
-            payload["function_call_and_params"],
-            payload["server_name"],
+            request.unique_channel_number,
+            request.unique_client_number,
+            request.client_phrase,
+            request.bot_phrase,
+            request.channel_name,
+            request.bot_number,
+            request.llm,
+            request.api_key_masked,
+            request.tokens_spent_smaipl,
+            request.inbound_without_coefficient,
+            request.outbound_without_coefficient,
+            request.function_error,
+            request.function_call_and_params,
+            request.server_name,
         )
         await conn.execute(
             "DELETE FROM logs WHERE created_at < now() - ($1::int * INTERVAL '1 day')",
             RETENTION_DAYS,
         )
-    return {"id": row["id"], "created_at": row["created_at"].isoformat()}
+    return LogCreateResponse(id=row["id"], created_at=row["created_at"])
 
 
 @app.get("/api/v1/logs")
@@ -287,10 +301,7 @@ async def get_logs(
         params.append(datetime.fromisoformat(to_date))
 
     # Handle + sign in query parameters and enable partial matching
-    def fix_plus_sign(value: str):
-        if value.startswith(" "):
-            return "+" + value[1:]
-        return value
+    # (function fix_plus_sign now imported from utils)
 
     if unique_channel_number:
         unique_channel_number = fix_plus_sign(unique_channel_number)
@@ -359,4 +370,4 @@ async def get_logs(
         item["created_at"] = item["created_at"].isoformat()
         items.append(item)
 
-    return {"page": page, "page_size": page_size, "total": total, "items": items}
+    return LogsListResponse(page=page, page_size=page_size, total=total, items=items)
