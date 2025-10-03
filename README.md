@@ -89,7 +89,7 @@ EMAIL=admin@example.com
 Чтобы создать первый токен администратора:
 
 ```bash
-docker-compose run --rm app python init_admin.py
+docker-compose exec app python -m app.init_admin
 ```
 
 Вывод будет таким:

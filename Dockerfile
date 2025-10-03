@@ -19,7 +19,7 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Делаем entrypoint исполняемым
-RUN chmod +x ./entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Открываем порт
 EXPOSE 8000
