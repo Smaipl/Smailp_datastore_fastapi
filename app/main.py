@@ -229,6 +229,34 @@ async def get_logs(
             detail=f"Invalid sort_by, allowed: {', '.join(valid_columns)}",
         )
 
+    # Validate filter parameters
+    allowed_params = {
+        "from",
+        "to",
+        "unique_channel_number",
+        "unique_client_number",
+        "client_phrase",
+        "bot_phrase",
+        "channel_name",
+        "bot_number",
+        "llm",
+        "function_error",
+        "server",
+        "page",
+        "page_size",
+        "sort_by",
+        "order",
+    }
+
+    query_params = set(request.query_params.keys())
+    invalid_params = query_params - allowed_params
+
+    if invalid_params:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Неподдерживаемые параметры фильтрации: {', '.join(invalid_params)}",
+        )
+
     # Handle user role restrictions
     if auth["role"] == "user" and not any(
         [
