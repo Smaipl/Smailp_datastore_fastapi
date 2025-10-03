@@ -4,8 +4,6 @@
 # 📦 Log Storage Service (FastAPI + PostgreSQL + Caddy)
 
 Сервис для хранения логов и управления токенами.  
-Этап 1 проекта: REST API для записи и получения логов.  
-Просмотр логов можно реализовать подключением **Metabase** или **Grafana** к PostgreSQL.  
 
 ---
 
@@ -19,17 +17,19 @@ logservice/
 │   ├── db.py                # Подключение к БД
 │   ├── models.py            # SQL схемы (asyncpg)
 │   ├── utils.py             # Хэширование токенов
+│   ├── schemas.py           # Схемы для валидации данных
 │   └── init_admin.py        # Скрипт создания первого admin-токена
-│
 ├── migrations/
 │   └── 001_create_tables.sql
 │
 ├── .env                     # Конфигурация приложения
 ├── .dockerignore
-├── Caddyfile
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
+├── Caddyfile                # Caddyfile для продакшена
+├── Caddyfile.dev            # Caddyfile для разработки
+├── Dockerfile               # Dockerfile для сборки образа
+├── docker-compose.yml       # docker-compose для запуска приложения
+├── requirements.txt          
+├── entrypoint.sh            # Скрипт запуска приложения
 └── README.md
 
 
@@ -56,7 +56,7 @@ POSTGRES_PASSWORD=logs_pass
 # Caddy (для HTTPS)
 DOMAIN=logs.example.com
 EMAIL=admin@example.com
-````
+```
 
 ### Важные параметры
 

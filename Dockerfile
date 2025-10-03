@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM docker-hub.vgorovetskiy.keenetic.pro/python:3.11-slim
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
