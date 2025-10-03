@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  db_fastapi:
+    image: postgres:15
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata_fastapi:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+
+  app:
+    build: .
+    env_file: .env
+    depends_on:
+      - db_fastapi
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    volumes:
+      - ./app:/app
+      - ./migrations:/migrations
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2.8
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
+      - caddy_data_fastapi:/data
+      - caddy_config_fastapi:/config
+    env_file: .env
+
+volumes:
+  pgdata_fastapi:
+  caddy_data_fastapi:
+  caddy_config_fastapi:
