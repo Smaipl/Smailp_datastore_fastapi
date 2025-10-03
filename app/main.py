@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from datetime import datetime, timezone, timedelta
 import secrets, os
-from .db import get_db
-from .auth import get_token_info
-from .utils import hash_token
+from app.db import get_db
+from app.auth import get_token_info
+from app.utils import hash_token
 
 app = FastAPI(title="Log Storage Service (FastAPI)")
 

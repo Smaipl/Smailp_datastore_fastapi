@@ -73,15 +73,7 @@ Swagger доступен на `http://127.0.0.1:8000/docs`.
 
 ### 6. Использование в IDE
 
-* В **PyCharm**: создайте конфигурацию *Run/Debug → Uvicorn*, укажите:
 
-  ```
-  Module: app.main
-  App: app
-  Host: 127.0.0.1
-  Port: 8000
-  Reload: ✅
-  ```
 * В **VSCode**: в `launch.json` добавьте:
 
   ```json

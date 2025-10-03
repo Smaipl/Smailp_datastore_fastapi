@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, Header
 from datetime import datetime, timezone
-from .db import get_db
-from .utils import hash_token
+from app.db import get_db
+from app.utils import hash_token
 
 
 async def get_token_info(authorization: str = Header(...)):
