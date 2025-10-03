@@ -72,9 +72,10 @@ EMAIL=admin@example.com
 1. Подготовить `.env`.
 2. Собрать и запустить контейнеры:
 
-   ```bash
-   docker-compose up --build -d
-   ```
+```bash
+docker-compose up --build -d
+```
+
 3. Приложение доступно:
 
    * API: `http://localhost/api/v1/...`
@@ -204,6 +205,87 @@ curl -X POST http://localhost/api/v1/logs \
 
 ⚠️ После вставки автоматически выполняется удаление записей старше `RETENTION_DAYS`.
 
+### GET `/api/v1/logs`
+Получение логов с фильтрацией и пагинацией
+
+#### Заголовки:
+  * `Authorization: Bearer <token>`
+
+#### Параметры запроса (опциональны):
+  * `from` — datetime ISO (начало диапазона created_at)
+  * `to` — datetime ISO (конец диапазона created_at)
+  * `unique_channel_number` — Поиск по номеру канала (нестрогий, регистронезависимый)
+  * `unique_client_number` — Поиск по номеру клиента (нестрогий, регистронезависимый)
+  * `client_phrase` — Поиск по фразе клиента (нестрогий, регистронезависимый)
+  * `bot_phrase` — Поиск по фразе бота (нестрогий, регистронезависимый)
+  * `channel_name` — Поиск по названию канала (нестрогий, регистронезависимый)
+  * `bot_number` — Поиск по номеру бота (нестрогий, регистронезависимый)
+  * `llm` — Поиск по модели LLM (нестрогий, регистронезависимый)
+  * `function_error` — Поиск по ошибке функции (нестрогий, регистронезависимый)
+  * `server` — Поиск по имени сервера (нестрогий, регистронезависимый)
+  * `page` — Номер страницы (начиная с 1)
+  * `page_size` — Размер страницы (1-100)
+  * `sort_by` — Поле для сортировки (по дефолту `created_at`)
+  * `order` — `asc|desc` (по дефолту `desc`)
+
+#### Особенности поиска:
+  - Поиск выполняется по подстроке в любом месте значения
+  - Регистр не имеет значения (Telegram = TELEGRAM = telegram)
+  - Спецсимволы обрабатываются корректно (особенно "+" в начале значения)
+  - Примеры:
+    - `unique_channel_number=+555` - найдет "+555", "123+555", "+555abc"
+    - `channel_name=tele` - найдет "Telegram", "my_tele_bot", "TELEPORT"
+    - `bot_number=22` - найдет "bot022", "22-bot", "superbot22"
+    - `unique_client_number=client` - найдет "client_omega", "user_client", "superclient"
+    - `client_phrase=привет` - найдет "Приветствие", "приветствие", "Скажи привет"
+    - `bot_phrase=помощь` - найдет "Нужна помощь?", "Помощь", "Техподдержка"
+    - `llm=gpt` - найдет "GPT-4", "gpt-3.5", "ChatGPT"
+    - `function_error=timeout` - найдет "Connection timeout", "timeout_error", "TimeoutException"
+
+#### Правила выдачи в зависимости от роли:
+  * `user`:
+    * Если нет параметров фильтра — возвращается пустой список
+    * Если есть хотя бы один параметр фильтра — фильтруем по заданным параметрам
+  * `admin`:
+    * Если нет параметров фильтра — возвращаются все записи
+    * Если заданы фильтры — применяются
+
+#### Пример запроса:
+```bash
+curl -X GET "http://localhost/api/v1/logs?from=2025-01-01T00:00:00Z&to=2025-12-31T23:59:59Z&channel_name=telegram&page=1&page_size=10" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+#### Ответ:
+```json
+{
+  "page": 1,
+  "page_size": 10,
+  "total": 12345,
+  "items": [
+    {
+      "id": 1,
+      "unique_channel_number": "ch_001",
+      "unique_client_number": "client123",
+      "client_phrase": "hello",
+      "bot_phrase": "hi",
+      "channel_name": "telegram",
+      "bot_number": "bot001",
+      "llm": "gpt-5",
+      "api_key_masked": "***",
+      "tokens_spent_smaipl": 100,
+      "inbound_without_coefficient": 80,
+      "outbound_without_coefficient": 20,
+      "function_error": null,
+      "function_call_and_params": "{}",
+      "server_name": "srv01",
+      "created_at": "2025-01-01T12:34:56.789012+00:00"
+    },
+    ...
+  ]
+}
+```
+
 ---
 
 ## 🔍 OpenAPI / Swagger
@@ -242,8 +324,8 @@ http://localhost/docs
 
 ## 🔧 Роли
 
-* **admin**: может генерировать токены, писать и читать логи.
-* **user**: может писать и читать логи (но если запрос без фильтров — вернёт пустой список).
+* **admin**: может генерировать токены, писать и читать логи (включая доступ ко всем записям без фильтров).
+* **user**: может писать логи и читать с применением фильтров (при отсутствии фильтров возвращается пустой список).
 
 ---
 

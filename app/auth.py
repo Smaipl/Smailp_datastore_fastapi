@@ -3,8 +3,27 @@ from datetime import datetime, timezone
 from app.db import get_db
 from app.utils import hash_token
 
+"""
+Модуль auth: Аутентификация и авторизация
+Компоненты:
+  - get_token_info: Получение информации о токене
+"""
+
 
 async def get_token_info(authorization: str = Header(...)):
+    """
+    Проверяет Bearer токен и возвращает информацию о нём
+
+    Args:
+        authorization: Заголовок Authorization в формате "Bearer <token>"
+
+    Returns:
+        dict: Словарь с информацией о токене (id, role)
+
+    Вызывает:
+        HTTPException 401: Неправильный формат токена
+        HTTPException 403: Неверный или просроченный токен
+    """
     if not authorization.lower().startswith("bearer "):
         raise HTTPException(
             status_code=401, detail="Authorization must be Bearer token"
