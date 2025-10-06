@@ -31,25 +31,6 @@ from app.utils import hash_token, fix_plus_sign
 
 app = FastAPI(title="Log Storage Service (FastAPI)")
 
-
-@app.get("/healthcheck", include_in_schema=False, response_model=HealthCheckResponse)
-async def health_check():
-    """
-    Health check endpoint to verify service and database connectivity
-    Returns:
-        HealthCheckResponse: Status and database connection status
-    """
-    try:
-        pool = await get_db()
-        async with pool.acquire() as conn:
-            await conn.fetchval("SELECT 1")
-        return HealthCheckResponse(status="ok", database="connected")
-    except Exception as e:
-        return HealthCheckResponse(
-            status="error", database="disconnected", error=str(e)
-        )
-
-
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", "30"))
 
 POST_ORDER = [
@@ -68,6 +49,24 @@ POST_ORDER = [
     "function_call_and_params",
     "server_name",
 ]
+
+
+@app.get("/healthcheck", include_in_schema=False, response_model=HealthCheckResponse)
+async def health_check():
+    """
+    Health check endpoint to verify service and database connectivity
+    Returns:
+        HealthCheckResponse: Status and database connection status
+    """
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return HealthCheckResponse(status="ok", database="connected")
+    except Exception as e:
+        return HealthCheckResponse(
+            status="error", database="disconnected", error=str(e)
+        )
 
 
 @app.on_event("startup")
