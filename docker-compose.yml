@@ -39,7 +39,7 @@ services:
     env_file: .env
 
   grafana:
-    image: grafana/grafana:12.3.0-18266415852
+    image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
     depends_on:
       - db
     ports:

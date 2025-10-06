@@ -9,54 +9,42 @@
 
 ## 📂 Структура проекта
 
+```bash
 logservice/
 ├── app/
-│   ├── **init**.py
-│   ├── main.py              # FastAPI-приложение (эндпоинты)
-│   ├── auth.py              # Авторизация по токенам
-│   ├── db.py                # Подключение к БД
-│   ├── models.py            # SQL схемы (asyncpg)
-│   ├── utils.py             # Хэширование токенов
-│   ├── schemas.py           # Схемы для валидации данных
-│   └── init_admin.py        # Скрипт создания первого admin-токена
+│   ├── __init__.py
+│   ├── main.py
+│   ├── auth.py
+│   ├── db.py
+│   ├── init_admin.py
+│   ├── schemas.py
+│   └── utils.py
+├── grafana/
+│   └── provisioning/
+│       └── datasources/
+│           └── datasource.yaml
 ├── migrations/
-│   └── 001_create_tables.sql
-│
-├── .env                     # Конфигурация приложения
+│   ├── 001_create_tables.sql
+│   ├── 002_add_indexes.sql
+│   └── 003_create_user_read.sql
+├── .env
 ├── .dockerignore
-├── Caddyfile                # Caddyfile для продакшена
-├── Caddyfile.dev            # Caddyfile для разработки
-├── Dockerfile               # Dockerfile для сборки образа
-├── docker-compose.yml       # docker-compose для запуска приложения
-├── requirements.txt          
-├── entrypoint.sh            # Скрипт запуска приложения
-└── README.md
+├── Caddyfile
+├── Caddyfile.dev
+├── Dockerfile
+├── docker-compose.yml
+├── entrypoint.sh
+├── README.md
+├── requirements.txt
+└── run_in_deployment_mode.md
 
+```
 
 ---
 
 ## ⚙️ Конфигурация (.env)
 
 Все настройки выносятся в файл `.env`:
-
-```dotenv
-# FastAPI
-APP_HOST=0.0.0.0
-APP_PORT=8000
-RETENTION_DAYS=30
-TOKEN_PEPPER=please-change-me
-
-# Database
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_DB=logs_db
-POSTGRES_USER=logs_user
-POSTGRES_PASSWORD=logs_pass
-
-# Caddy (для HTTPS)
-DOMAIN=logs.example.com
-EMAIL=admin@example.com
-```
 
 ### Важные параметры
 
@@ -66,6 +54,9 @@ EMAIL=admin@example.com
 * **DOMAIN** и **EMAIL** — для автоматического получения TLS-сертификата в Caddy.
 * **TOKEN_PEPPER** — критически важная "соль" для хэширования токенов (обязательна к замене в продакшене)
 * **RETENTION_DAYS** — автоматическое удаление старых записей (по умолчанию 30 дней)
+* **GRAFANA_ADMIN_PASSWORD** - админиский пароль для Grafana
+* **POSTGRES_READ_USER** - пользователь для чтения данных из БД
+* **POSTGRES_READ_PASSWORD** - пароль для пользователя для чтения данных из БД
 
 ---
 
