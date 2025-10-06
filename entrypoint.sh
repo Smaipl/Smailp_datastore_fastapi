@@ -8,11 +8,13 @@ done
 
 echo "✅ Database is up, applying migrations..."
 
-for f in /migrations/*.sql; do
-  echo "Applying migration: $f"
-  psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" -f "$f"
-done
+# Применяем миграции
+psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" \
+  -f /migrations/001_create_tables.sql \
+  -f /migrations/002_add_indexes.sql \
+  -f /migrations/003_create_user_read.sql
 
 echo "✅ Migrations applied"
 
+# Запускаем приложение
 exec "$@"

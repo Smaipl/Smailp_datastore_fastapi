@@ -83,8 +83,28 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 migrations/
   001_create_tables.sql
-  002_add_new_column.sql
-  003_add_index_logs.sql
+  002_add_indexes.sql
+  003_create_user_read.sql
 ```
+
+## 🔹 Описание миграции 003_create_user_read.sql
+
+Добавляет пользователя `user_read` с правами только на чтение всех таблиц:
+
+- Создает роль `user_read` без возможности логина
+- Выдает права:
+  - `CONNECT` к базе данных
+  - `USAGE` схемы public
+  - `SELECT` на все существующие и будущие таблицы
+- В Down-миграции:
+  - Отзывает все выданные права
+  - Удаляет роль
+
+Для применения миграции выполните:
+
+```bash
+docker-compose exec db psql -U logs_user -d logs_db -f /migrations/003_create_user_read.sql
+```
+
 
 ---
