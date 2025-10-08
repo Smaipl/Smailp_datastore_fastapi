@@ -10,8 +10,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    expose:
-      - "5432"
+    ports:
+      - "${POSTGRES_PORT}:5432"
 
   app:
     image: docker-hub.vgorovetskiy.keenetic.pro/datastore_fastapi-app:1.2.1
@@ -30,31 +30,33 @@ services:
     env_file: .env
     depends_on:
       - app
+      - grafana
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.dev:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-
 
   grafana:
     image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
     env_file: .env
     depends_on:
       - db
-    ports:
-      - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
       - grafana_config:/etc/grafana
-      # Для datasources
       - ./grafana/provisioning:/etc/grafana/provisioning
+    expose:
+      - "8000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=${DOMAIN}
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
 
 volumes:
   pgdata:
