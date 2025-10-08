@@ -1,9 +1,20 @@
 {$DOMAIN} {
-    reverse_proxy app:8000
-    tls {$EMAIL}
+    @websocket {
+        path /ws*
+        path /api/*/ws*
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    respond @websocket 404 "WebSocket not supported"
+
+    reverse_proxy app:8000 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {$DOMAIN}
+    }
+
+    encode gzip
 }
 
-grafana.{$DOMAIN} {
+{$GRAFANA_DOMAIN} {
     reverse_proxy grafana:3000
-    tls {$EMAIL}
 }
