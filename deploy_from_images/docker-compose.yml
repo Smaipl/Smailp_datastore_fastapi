@@ -49,7 +49,7 @@ services:
       - grafana_config:/etc/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     expose:
-      - "8000"
+      - "3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
