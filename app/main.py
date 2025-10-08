@@ -1,5 +1,5 @@
 from typing import Any
-from fastapi import FastAPI, Depends, HTTPException, Request, Query
+from fastapi import FastAPI, Depends, HTTPException, Request, Query, Body
 from app.schemas import (
     TokenGenerationRequest,
     TokenGenerationResponse,
@@ -121,7 +121,7 @@ async def generate_token(request: TokenGenerationRequest, auth=Depends(get_token
 
 
 @app.post("/api/v1/logs", response_model=LogCreateResponse)
-async def create_log(request: Any, auth=Depends(get_token_info)):
+async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
     """
     Создание новой записи лога (доступно всем авторизованным пользователям)
 
