@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import FastAPI, Depends, HTTPException, Request, Query
 from app.schemas import (
     TokenGenerationRequest,
@@ -120,7 +121,7 @@ async def generate_token(request: TokenGenerationRequest, auth=Depends(get_token
 
 
 @app.post("/api/v1/logs", response_model=LogCreateResponse)
-async def create_log(request: LogItem, auth=Depends(get_token_info)):
+async def create_log(request: Any, auth=Depends(get_token_info)):
     """
     Создание новой записи лога (доступно всем авторизованным пользователям)
 
@@ -131,6 +132,20 @@ async def create_log(request: LogItem, auth=Depends(get_token_info)):
     Дополнительно:
       - Автоматически удаляет записи старше RETENTION_DAYS дней
     """
+    # Обработка массива (устаревший формат)
+    if isinstance(request, list):
+        if len(request) != len(POST_ORDER):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Ожидается {len(POST_ORDER)} элементов, получено {len(request)}",
+            )
+
+        # Преобразуем массив в словарь используя POST_ORDER
+        request = dict(zip(POST_ORDER, request))
+
+    # Проверяем и конвертируем в LogItem
+    log_item = LogItem(**request)
+
     pool = await get_db()
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
@@ -144,20 +159,20 @@ async def create_log(request: LogItem, auth=Depends(get_token_info)):
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
             ) RETURNING id, created_at
             """,
-            request.unique_channel_number,
-            request.unique_client_number,
-            request.client_phrase,
-            request.bot_phrase,
-            request.channel_name,
-            request.bot_number,
-            request.llm,
-            request.api_key_masked,
-            request.tokens_spent_smaipl,
-            request.inbound_without_coefficient,
-            request.outbound_without_coefficient,
-            request.function_error,
-            request.function_call_and_params,
-            request.server_name,
+            log_item.unique_channel_number,
+            log_item.unique_client_number,
+            log_item.client_phrase,
+            log_item.bot_phrase,
+            log_item.channel_name,
+            log_item.bot_number,
+            log_item.llm,
+            log_item.api_key_masked,
+            log_item.tokens_spent_smaipl,
+            log_item.inbound_without_coefficient,
+            log_item.outbound_without_coefficient,
+            log_item.function_error,
+            log_item.function_call_and_params,
+            log_item.server_name,
         )
         await conn.execute(
             "DELETE FROM logs WHERE created_at < now() - ($1::int * INTERVAL '1 day')",
