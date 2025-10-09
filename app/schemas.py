@@ -15,20 +15,20 @@ class TokenGenerationResponse(BaseModel):
 
 
 class LogItem(BaseModel):
-    unique_channel_number: str
-    unique_client_number: str
-    client_phrase: str
-    bot_phrase: str
-    channel_name: str
-    bot_number: str
-    llm: str
-    api_key_masked: str
+    unique_channel_number: Optional[str] = None
+    unique_client_number: Optional[str] = None
+    client_phrase: Optional[str] = None
+    bot_phrase: Optional[str] = None
+    channel_name: Optional[str] = None
+    bot_number: Optional[str] = None
+    llm: Optional[str] = None
+    api_key_masked: Optional[str] = None
     tokens_spent_smaipl: int
     inbound_without_coefficient: int
     outbound_without_coefficient: int
     function_error: Optional[str] = None
-    function_call_and_params: str
-    server_name: str
+    function_call_and_params: Optional[str] = None
+    server_name: Optional[str] = None
 
 
 class LogCreateResponse(BaseModel):
