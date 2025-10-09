@@ -80,7 +80,7 @@ curl -X POST "https://example.com/api/v1/logs" \
   "bot_number": "...",
   "llm": "...",
   "api_key_masked": "...",
-  "tokens_spent_smaipl": 123,
+  "tokens_spent": 123,
   "inbound_without_coefficient": 45,
   "outbound_without_coefficient": 78,
   "function_error": "...",
@@ -134,7 +134,7 @@ curl -X POST "https://example.com/api/v1/logs" \
 5  — bot_number                       (Номер бота)
 6  — llm                              (LLM)
 7  — api_key_masked                   (Ключ)
-8  — tokens_spent_smaipl              (Расход в токенах SMAIPL) — numeric/int
+8  — tokens_spent              (Расход в токенах SMAIPL) — numeric/int
 9  — inbound_without_coefficient      (Входящие без коэффициента) — numeric
 10 — outbound_without_coefficient     (Исходящие без коэффициента) — numeric
 11 — function_error                   (Ошибка при выполнении функции)
@@ -262,7 +262,7 @@ class LogItem(BaseModel):
     bot_number: str
     llm: str
     api_key_masked: str
-    tokens_spent_smaipl: int
+    tokens_spent: int
     inbound_without_coefficient: int
     outbound_without_coefficient: int
     function_error: Optional[str] = None
@@ -344,7 +344,7 @@ CREATE TABLE logs (
   bot_number TEXT,
   llm TEXT,
   api_key_masked TEXT,
-  tokens_spent_smaipl BIGINT,
+  tokens_spent BIGINT,
   inbound_without_coefficient BIGINT,
   outbound_without_coefficient BIGINT,
   function_error TEXT,
