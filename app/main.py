@@ -43,7 +43,7 @@ POST_ORDER = [
     "bot_number",
     "llm",
     "api_key_masked",
-    "tokens_spent_smaipl",
+    "tokens_spent",
     "inbound_without_coefficient",
     "outbound_without_coefficient",
     "function_error",
@@ -152,7 +152,7 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
             """
             INSERT INTO logs (
                 unique_channel_number, unique_client_number, client_phrase, bot_phrase,
-                channel_name, bot_number, llm, api_key_masked, tokens_spent_smaipl,
+                channel_name, bot_number, llm, api_key_masked, tokens_spent,
                 inbound_without_coefficient, outbound_without_coefficient,
                 function_error, function_call_and_params, server_name
             ) VALUES (
@@ -167,7 +167,7 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
             log_item.bot_number,
             log_item.llm,
             log_item.api_key_masked,
-            log_item.tokens_spent_smaipl,
+            log_item.tokens_spent,
             log_item.inbound_without_coefficient,
             log_item.outbound_without_coefficient,
             log_item.function_error,
@@ -243,7 +243,7 @@ async def get_logs(
         "bot_number",
         "llm",
         "api_key_masked",
-        "tokens_spent_smaipl",
+        "tokens_spent",
         "inbound_without_coefficient",
         "outbound_without_coefficient",
         "function_error",
