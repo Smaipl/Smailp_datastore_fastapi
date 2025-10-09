@@ -23,7 +23,7 @@ class LogItem(BaseModel):
     bot_number: Optional[str] = None
     llm: Optional[str] = None
     api_key_masked: Optional[str] = None
-    tokens_spent_smaipl: int
+    tokens_spent: int
     inbound_without_coefficient: int
     outbound_without_coefficient: int
     function_error: Optional[str] = None

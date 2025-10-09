@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS logs (
     bot_number TEXT,
     llm TEXT,
     api_key_masked TEXT,
-    tokens_spent_smaipl BIGINT,
+    tokens_spent BIGINT,
     inbound_without_coefficient BIGINT,
     outbound_without_coefficient BIGINT,
     function_error TEXT,
