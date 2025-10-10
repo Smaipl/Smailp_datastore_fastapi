@@ -15,19 +15,19 @@ class TokenGenerationResponse(BaseModel):
 
 
 class LogItem(BaseModel):
-    unique_channel_number: Optional[str] = None
-    unique_client_number: Optional[str] = None
-    client_phrase: Optional[str] = None
-    bot_phrase: Optional[str] = None
+    channel_id: Optional[str] = None
+    user_social_id: Optional[str] = None
+    user_message: Optional[str] = None
+    bot_reply: Optional[str] = None
     channel_name: Optional[str] = None
-    bot_number: Optional[str] = None
+    bot_id: Optional[str] = None
     llm: Optional[str] = None
-    api_key_masked: Optional[str] = None
-    tokens_spent: int
-    inbound_without_coefficient: int
-    outbound_without_coefficient: int
+    api_key: Optional[str] = None
+    tokens_total: int
+    tokens_in_source: int
+    tokens_out_source: int
     function_error: Optional[str] = None
-    function_call_and_params: Optional[str] = None
+    function_call_params: Optional[str] = None
     server_name: Optional[str] = None
 
 

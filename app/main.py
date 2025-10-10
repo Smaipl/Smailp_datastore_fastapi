@@ -35,19 +35,19 @@ app = FastAPI(title="Log Storage Service (FastAPI)")
 RETENTION_DAYS = int(os.getenv("RETENTION_DAYS", "30"))
 
 POST_ORDER = [
-    "unique_channel_number",
-    "unique_client_number",
-    "client_phrase",
-    "bot_phrase",
+    "channel_id",
+    "user_social_id",
+    "user_message",
+    "bot_reply",
     "channel_name",
-    "bot_number",
+    "bot_id",
     "llm",
-    "api_key_masked",
-    "tokens_spent",
-    "inbound_without_coefficient",
-    "outbound_without_coefficient",
+    "api_key",
+    "tokens_total",
+    "tokens_in_source",
+    "tokens_out_source",
     "function_error",
-    "function_call_and_params",
+    "function_call_params",
     "server_name",
 ]
 
@@ -151,27 +151,27 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
         row = await conn.fetchrow(
             """
             INSERT INTO logs (
-                unique_channel_number, unique_client_number, client_phrase, bot_phrase,
-                channel_name, bot_number, llm, api_key_masked, tokens_spent,
-                inbound_without_coefficient, outbound_without_coefficient,
-                function_error, function_call_and_params, server_name
+                channel_id, user_social_id, user_message, bot_reply,
+                channel_name, bot_id, llm, api_key, tokens_total,
+                tokens_in_source, tokens_out_source,
+                function_error, function_call_params, server_name
             ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
             ) RETURNING id, created_at
             """,
-            log_item.unique_channel_number,
-            log_item.unique_client_number,
-            log_item.client_phrase,
-            log_item.bot_phrase,
+            log_item.channel_id,
+            log_item.user_social_id,
+            log_item.user_message,
+            log_item.bot_reply,
             log_item.channel_name,
-            log_item.bot_number,
+            log_item.bot_id,
             log_item.llm,
-            log_item.api_key_masked,
-            log_item.tokens_spent,
-            log_item.inbound_without_coefficient,
-            log_item.outbound_without_coefficient,
+            log_item.api_key,
+            log_item.tokens_total,
+            log_item.tokens_in_source,
+            log_item.tokens_out_source,
             log_item.function_error,
-            log_item.function_call_and_params,
+            log_item.function_call_params,
             log_item.server_name,
         )
         await conn.execute(
@@ -187,15 +187,15 @@ async def get_logs(
     auth=Depends(get_token_info),
     from_date: str = Query(None, alias="from"),
     to_date: str = Query(None, alias="to"),
-    unique_channel_number: str = Query(None),
-    unique_client_number: str = Query(None),
-    client_phrase: str = Query(None),
-    bot_phrase: str = Query(None),
+    channel_id: str = Query(None),
+    user_social_id: str = Query(None),
+    user_message: str = Query(None),
+    bot_reply: str = Query(None),
     channel_name: str = Query(None),
-    bot_number: str = Query(None),
+    bot_id: str = Query(None),
     llm: str = Query(None),
     function_error: str = Query(None),
-    server: str = Query(None, alias="server"),
+    server_name: str = Query(None),
     page: int = Query(1, gt=0),
     page_size: int = Query(10, gt=0, le=100),
     sort_by: str = Query("created_at"),
@@ -207,10 +207,10 @@ async def get_logs(
     Параметры запроса:
       - from: Начало диапазона времени (ISO формат)
       - to: Конец диапазона времени (ISO формат)
-      - unique_channel_number: Номер канала
+      - channel_id: Номер канала
       - channel_name: Название канала
-      - bot_number: Номер бота
-      - server: Имя сервера
+      - bot_id: Номер бота
+      - server_name: Имя сервера
       - page: Номер страницы (начиная с 1)
       - page_size: Размер страницы (1-100)
       - sort_by: Поле для сортировки
@@ -235,19 +235,19 @@ async def get_logs(
     # Validate sort_by parameter
     valid_columns = [
         "id",
-        "unique_channel_number",
-        "unique_client_number",
-        "client_phrase",
-        "bot_phrase",
+        "channel_id",
+        "user_social_id",
+        "user_message",
+        "bot_reply",
         "channel_name",
-        "bot_number",
+        "bot_id",
         "llm",
-        "api_key_masked",
-        "tokens_spent",
-        "inbound_without_coefficient",
-        "outbound_without_coefficient",
+        "api_key",
+        "tokens_total",
+        "tokens_in_source",
+        "tokens_out_source",
         "function_error",
-        "function_call_and_params",
+        "function_call_params",
         "server_name",
         "created_at",
     ]
@@ -261,15 +261,15 @@ async def get_logs(
     allowed_params = {
         "from",
         "to",
-        "unique_channel_number",
-        "unique_client_number",
-        "client_phrase",
-        "bot_phrase",
+        "channel_id",
+        "user_social_id",
+        "user_message",
+        "bot_reply",
         "channel_name",
-        "bot_number",
+        "bot_id",
         "llm",
         "function_error",
-        "server",
+        "server_name",
         "page",
         "page_size",
         "sort_by",
@@ -290,15 +290,15 @@ async def get_logs(
         [
             from_date,
             to_date,
-            unique_channel_number,
-            unique_client_number,
-            client_phrase,
-            bot_phrase,
+            channel_id,
+            user_social_id,
+            user_message,
+            bot_reply,
             channel_name,
-            bot_number,
+            bot_id,
             llm,
             function_error,
-            server,
+            server_name,
         ]
     ):
         return {"page": page, "page_size": page_size, "total": 0, "items": []}
@@ -317,35 +317,35 @@ async def get_logs(
     # Handle + sign in query parameters and enable partial matching
     # (function fix_plus_sign now imported from utils)
 
-    if unique_channel_number:
-        unique_channel_number = fix_plus_sign(unique_channel_number)
-        conditions.append("unique_channel_number ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{unique_channel_number}%")
+    if channel_id:
+        channel_id = fix_plus_sign(channel_id)
+        conditions.append("channel_id ILIKE $%d" % (len(params) + 1))
+        params.append(f"%{channel_id}%")
     if channel_name:
         channel_name = fix_plus_sign(channel_name)
         conditions.append("channel_name ILIKE $%d" % (len(params) + 1))
         params.append(f"%{channel_name}%")
-    if bot_number:
-        bot_number = fix_plus_sign(bot_number)
-        conditions.append("bot_number ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{bot_number}%")
-    if server:
-        server = fix_plus_sign(server)
+    if bot_id:
+        bot_id = fix_plus_sign(bot_id)
+        conditions.append("bot_id ILIKE $%d" % (len(params) + 1))
+        params.append(f"%{bot_id}%")
+    if server_name:
+        server_name = fix_plus_sign(server_name)
         conditions.append("server_name ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{server}%")
+        params.append(f"%{server_name}%")
     # Add additional filters for other fields
-    if unique_client_number:
-        unique_client_number = fix_plus_sign(unique_client_number)
-        conditions.append("unique_client_number ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{unique_client_number}%")
-    if client_phrase:
-        client_phrase = fix_plus_sign(client_phrase)
-        conditions.append("client_phrase ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{client_phrase}%")
-    if bot_phrase:
-        bot_phrase = fix_plus_sign(bot_phrase)
-        conditions.append("bot_phrase ILIKE $%d" % (len(params) + 1))
-        params.append(f"%{bot_phrase}%")
+    if user_social_id:
+        user_social_id = fix_plus_sign(user_social_id)
+        conditions.append("user_social_id ILIKE $%d" % (len(params) + 1))
+        params.append(f"%{user_social_id}%")
+    if user_message:
+        user_message = fix_plus_sign(user_message)
+        conditions.append("user_message ILIKE $%d" % (len(params) + 1))
+        params.append(f"%{user_message}%")
+    if bot_reply:
+        bot_reply = fix_plus_sign(bot_reply)
+        conditions.append("bot_reply ILIKE $%d" % (len(params) + 1))
+        params.append(f"%{bot_reply}%")
     if llm:
         llm = fix_plus_sign(llm)
         conditions.append("llm ILIKE $%d" % (len(params) + 1))

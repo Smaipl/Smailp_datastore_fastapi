@@ -24,10 +24,10 @@
 
     * `from` — datetime ISO (начало диапазона created_at)
     * `to` — datetime ISO (конец диапазона created_at)
-    * `unique_channel_number` — string
+    * `channel_id` — string (старый unique_channel_number)
     * `channel_name` — string
-    * `bot_number` — string
-    * `server` — string (server_name)
+    * `bot_id` — string (старый bot_number)
+    * `server_name` — string (старый server)
     * `page` — int (по умолчанию 1)
     * `page_size` — int (по умолчанию 10, макс, например 100)
     * `sort_by` — поле для сортировки (по дефолту `created_at`)
@@ -72,19 +72,19 @@ curl -X POST "https://example.com/api/v1/logs" \
 
 ```json
 {
-  "unique_channel_number": "...",
-  "unique_client_number": "...",
-  "client_phrase": "...",
-  "bot_phrase": "...",
+  "channel_id": "...",
+  "user_social_id": "...",
+  "user_message": "...",
+  "bot_reply": "...",
   "channel_name": "...",
-  "bot_number": "...",
+  "bot_id": "...",
   "llm": "...",
-  "api_key_masked": "...",
-  "tokens_spent": 123,
-  "inbound_without_coefficient": 45,
-  "outbound_without_coefficient": 78,
+  "api_key": "...",
+  "tokens_total": 123,
+  "tokens_in_source": 45,
+  "tokens_out_source": 78,
   "function_error": "...",
-  "function_call_and_params": "...",
+  "function_call_params": "...",
   "server_name": "..."
 }
 ```
@@ -126,20 +126,20 @@ curl -X POST "https://example.com/api/v1/logs" \
 #### Маппинг для POST (массив) — порядок элементов:
 
 ```
-0  — unique_channel_number            (Уникальный номер канала общения)
-1  — unique_client_number             (Уникальный номер клиента)
-2  — client_phrase                    (Фраза клиента)
-3  — bot_phrase                       (Фраза бота)
-4  — channel_name                     (Канал связи)
-5  — bot_number                       (Номер бота)
-6  — llm                              (LLM)
-7  — api_key_masked                   (Ключ)
-8  — tokens_spent              (Расход в токенах SMAIPL) — numeric/int
-9  — inbound_without_coefficient      (Входящие без коэффициента) — numeric
-10 — outbound_without_coefficient     (Исходящие без коэффициента) — numeric
-11 — function_error                   (Ошибка при выполнении функции)
-12 — function_call_and_params         (Вызов функции и параметры)
-13 — server_name                      (Сервер)
+0  — channel_id               (Уникальный номер канала общения)
+1  — user_social_id           (Уникальный номер клиента)
+2  — user_message             (Фраза клиента)
+3  — bot_reply                (Фраза бота)
+4  — channel_name             (Канал связи)
+5  — bot_id                   (Номер бота)
+6  — llm                      (LLM)
+7  — api_key                  (Ключ)
+8  — tokens_total             (Расход в токенах SMAIPL) — numeric/int
+9  — tokens_in_source         (Входящие без коэффициента) — numeric
+10 — tokens_out_source        (Исходящие без коэффициента) — numeric
+11 — function_error           (Ошибка при выполнении функции)
+12 — function_call_params     (Вызов функции и параметры)
+13 — server_name              (Сервер)
 ```
 
 ### GET /api/v1/logs — получить записи (фильтры + пагинация)
@@ -150,21 +150,21 @@ curl -X POST "https://example.com/api/v1/logs" \
 
 * Query params (опционально):
 
-  * `from` — datetime ISO (начало диапазона created_at)
-  * `to` — datetime ISO (конец диапазона created_at)
-  * `unique_channel_number` — string
-  * `channel_name` — string
-  * `bot_number` — string
-  * `server` — string (server_name)
-  * `page` — int (по умолчанию 1)
-  * `page_size` — int (по умолчанию 10, макс 100)
-  * `sort_by` — поле для сортировки (по дефолту `created_at`)
-  * `order` — `asc|desc` (по дефолту `desc`)
+    * `from` — datetime ISO (начало диапазона created_at)
+    * `to` — datetime ISO (конец диапазона created_at)
+    * `channel_id` — string (старый unique_channel_number)
+    * `channel_name` — string
+    * `bot_id` — string (старый bot_number)
+    * `server_name` — string (старый server)
+    * `page` — int (по умолчанию 1)
+    * `page_size` — int (по умолчанию 10, макс, например 100)
+    * `sort_by` — поле для сортировки (по дефолту `created_at`)
+    * `order` — `asc|desc` (по дефолту `desc`)  
 
 * Дополнительные параметры поиска (нестрогий поиск по подстроке):
-  * `unique_client_number`
-  * `client_phrase`
-  * `bot_phrase`
+  * `user_social_id`
+  * `user_message`
+  * `bot_reply`
   * `llm`
   * `function_error`
 
@@ -254,20 +254,20 @@ curl -X POST "https://example.com/api/v1/logs" \
 #### `LogItem` - создание записи лога
 ```python
 class LogItem(BaseModel):
-    unique_channel_number: str
-    unique_client_number: str
-    client_phrase: str
-    bot_phrase: str
-    channel_name: str
-    bot_number: str
-    llm: str
-    api_key_masked: str
-    tokens_spent: int
-    inbound_without_coefficient: int
-    outbound_without_coefficient: int
+    channel_id: Optional[str] = None
+    user_social_id: Optional[str] = None
+    user_message: Optional[str] = None
+    bot_reply: Optional[str] = None
+    channel_name: Optional[str] = None
+    bot_id: Optional[str] = None
+    llm: Optional[str] = None
+    api_key: Optional[str] = None
+    tokens_total: int
+    tokens_in_source: int
+    tokens_out_source: int
     function_error: Optional[str] = None
-    function_call_and_params: str
-    server_name: str
+    function_call_params: Optional[str] = None
+    server_name: Optional[str] = None
 ```
 
 #### `LogCreateResponse` - ответ при создании лога
@@ -336,37 +336,37 @@ class HealthCheckResponse(BaseModel):
 ```sql
 CREATE TABLE logs (
   id BIGSERIAL PRIMARY KEY,
-  unique_channel_number TEXT,
-  unique_client_number TEXT,
-  client_phrase TEXT,
-  bot_phrase TEXT,
+  channel_id TEXT,
+  user_social_id TEXT,
+  user_message TEXT,
+  bot_reply TEXT,
   channel_name TEXT,
-  bot_number TEXT,
+  bot_id TEXT,
   llm TEXT,
-  api_key_masked TEXT,
-  tokens_spent BIGINT,
-  inbound_without_coefficient BIGINT,
-  outbound_without_coefficient BIGINT,
+  api_key TEXT,
+  tokens_total BIGINT,
+  tokens_in_source BIGINT,
+  tokens_out_source BIGINT,
   function_error TEXT,
-  function_call_and_params TEXT,
+  function_call_params TEXT,
   server_name TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Базовые индексы
 CREATE INDEX idx_logs_created_at ON logs (created_at DESC);
-CREATE INDEX idx_logs_unique_channel_number ON logs (unique_channel_number);
+CREATE INDEX idx_logs_channel_id ON logs (channel_id);
 CREATE INDEX idx_logs_channel_name ON logs (channel_name);
-CREATE INDEX idx_logs_bot_number ON logs (bot_number);
+CREATE INDEX idx_logs_bot_id ON logs (bot_number);
 CREATE INDEX idx_logs_server_name ON logs (server_name);
 
 -- GIN-индексы для полнотекстового поиска
-CREATE INDEX logs_unique_channel_number_gin_idx ON logs USING gin (unique_channel_number gin_trgm_ops);
-CREATE INDEX logs_unique_client_number_gin_idx ON logs USING gin (unique_client_number gin_trgm_ops);
-CREATE INDEX logs_client_phrase_gin_idx ON logs USING gin (client_phrase gin_trgm_ops);
-CREATE INDEX logs_bot_phrase_gin_idx ON logs USING gin (bot_phrase gin_trgm_ops);
+CREATE INDEX logs_channel_id_gin_idx ON logs USING gin (channel_id gin_trgm_ops);
+CREATE INDEX logs_user_social_id_gin_idx ON logs USING gin (user_social_id gin_trgm_ops);
+CREATE INDEX logs_user_message_gin_idx ON logs USING gin (user_message gin_trgm_ops);
+CREATE INDEX logs_bot_reply_gin_idx ON logs USING gin (bot_reply gin_trgm_ops);
 CREATE INDEX logs_channel_name_gin_idx ON logs USING gin (channel_name gin_trgm_ops);
-CREATE INDEX logs_bot_number_gin_idx ON logs USING gin (bot_number gin_trgm_ops);
+CREATE INDEX logs_bot_id_gin_idx ON logs USING gin (bot_id gin_trgm_ops);
 CREATE INDEX logs_llm_gin_idx ON logs USING gin (llm gin_trgm_ops);
 CREATE INDEX logs_function_error_gin_idx ON logs USING gin (function_error gin_trgm_ops);
 CREATE INDEX logs_server_name_gin_idx ON logs USING gin (server_name gin_trgm_ops);
@@ -448,13 +448,14 @@ CREATE UNIQUE INDEX ux_api_tokens_token_hash ON api_tokens (token_hash);
 - **Два формата ввода** (массив и объект)
 - **Расширенный поиск** по всем текстовым полям через GIN-индексы
 - **Healthcheck мониторинг**
-- **Интеграция Grafana** для визуализации
+- **Интеграция Grafana** для визуализации и аналитики
 - **Автоматический реконнект** к БД
 - **Строгая валидация Pydantic** для всех API-эндпоинтов
 
 ### Ключевые изменения архитектуры:
 - **Замена кастомной админки на Grafana** - готовая система визуализации вместо разработки с нуля
 - **FastAPI вместо Django** - более легковесное и асинхронное решение
+- **Grafana для мониторинга** - профессиональные дашборды и аналитика out-of-the-box
 - **Pydantic для валидации** - типобезопасность и автоматическая документация
 
 ---
@@ -480,7 +481,9 @@ curl http://localhost/healthcheck
 - Healthcheck: `https://domain.com/healthcheck`
 
 ### Мониторинг и визуализация:
+- **Grafana дашборды** доступны по пути `/grafana`
 - **Просмотр логов** через готовые панели Grafana
+- **Аналитика и тренды** - встроенные инструменты Grafana
 - **Метрики здоровья** через эндпоинт `/healthcheck`
 - **Логи приложения** через Docker Compose
 - **Валидация ошибок** - детализированные сообщения через Pydantic
