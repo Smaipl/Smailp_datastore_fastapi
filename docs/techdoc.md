@@ -218,7 +218,7 @@ curl -X POST "https://example.com/api/v1/logs" \
 
 ## 6. Визуализация и мониторинг (Grafana) ✅ **РЕАЛИЗОВАНО**
 
-**Развёртывание:** на том же сервере/домене, базовый путь `/grafana`
+**Развёртывание:** на том же сервере
 
 **Функциональность:**
 
@@ -413,7 +413,7 @@ CREATE UNIQUE INDEX ux_api_tokens_token_hash ON api_tokens (token_hash);
   * app (Uvicorn + FastAPI + Pydantic)
   * postgres (volume)
   * caddy (https)
-  * grafana (визуализация и мониторинг)
+  * grafana (визуализация)
 * Environment variables: DATABASE_URL, SECRET_KEY, RETENTION_DAYS, TOKEN_PEPPER, GRAFANA_ADMIN_PASSWORD
 
 ---
@@ -429,7 +429,7 @@ CREATE UNIQUE INDEX ux_api_tokens_token_hash ON api_tokens (token_hash);
 5. ✅ Таблица `api_tokens`, генерация токенов, middleware авторизации
 6. ✅ Healthcheck эндпоинт
 7. ✅ GIN-индексы для полнотекстового поиска
-8. ✅ Интеграция Grafana для визуализации и мониторинга
+8. ✅ Интеграция Grafana для визуализации
 9. ✅ **Pydantic валидация** для всех входных данных и API-эндпоинтов
 
 **Будущие улучшения:**
@@ -448,14 +448,13 @@ CREATE UNIQUE INDEX ux_api_tokens_token_hash ON api_tokens (token_hash);
 - **Два формата ввода** (массив и объект)
 - **Расширенный поиск** по всем текстовым полям через GIN-индексы
 - **Healthcheck мониторинг**
-- **Интеграция Grafana** для визуализации и аналитики
+- **Интеграция Grafana** для визуализации
 - **Автоматический реконнект** к БД
 - **Строгая валидация Pydantic** для всех API-эндпоинтов
 
 ### Ключевые изменения архитектуры:
-- **Замена кастомной админки на Grafana** - готовая система визуализации вместо разработки с нуля
 - **FastAPI вместо Django** - более легковесное и асинхронное решение
-- **Grafana для мониторинга** - профессиональные дашборды и аналитика out-of-the-box
+- **Grafana для просомтра** - профессиональные дашборды и аналитика out-of-the-box
 - **Pydantic для валидации** - типобезопасность и автоматическая документация
 
 ---
@@ -481,9 +480,7 @@ curl http://localhost/healthcheck
 - Healthcheck: `https://domain.com/healthcheck`
 
 ### Мониторинг и визуализация:
-- **Grafana дашборды** доступны по пути `/grafana`
 - **Просмотр логов** через готовые панели Grafana
-- **Аналитика и тренды** - встроенные инструменты Grafana
 - **Метрики здоровья** через эндпоинт `/healthcheck`
 - **Логи приложения** через Docker Compose
 - **Валидация ошибок** - детализированные сообщения через Pydantic
