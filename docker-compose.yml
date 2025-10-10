@@ -38,26 +38,26 @@ services:
       - caddy_config:/config
     env_file: .env
 
-  grafana:
-    image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
-    depends_on:
-      - db
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - grafana_config:/etc/grafana
-      # Для datasources
-      - ./grafana/provisioning:/etc/grafana/provisioning
-    env_file:
-      - .env
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN}
-      - GF_SERVER_ROOT_URL=https://${GRAFANA_DOMAIN}/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=false
+  # grafana:
+  #   image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
+  #   depends_on:
+  #     - db
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - grafana_config:/etc/grafana
+  #     # Для datasources
+  #     - ./grafana/provisioning:/etc/grafana/provisioning
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+  #     - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN}
+  #     - GF_SERVER_ROOT_URL=https://${GRAFANA_DOMAIN}/
+  #     - GF_SERVER_SERVE_FROM_SUB_PATH=false
 volumes:
   pgdata:
   caddy_data:
