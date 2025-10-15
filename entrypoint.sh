@@ -8,11 +8,12 @@ done
 
 echo "✅ Database is up, applying migrations..."
 
-# Применяем миграции
-psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" \
-  -f /migrations/001_create_tables.sql \
-  -f /migrations/002_add_indexes.sql \
-  -f /migrations/003_create_user_read.sql
+# Применяем все миграции с продолжением при ошибках
+for migration_file in $(ls /migrations/*.sql | sort); do
+  echo "Applying ${migration_file}..."
+  psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" \
+    -v ON_ERROR_STOP=0 -f "${migration_file}"
+done
 
 echo "✅ Migrations applied"
 
