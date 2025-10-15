@@ -12,7 +12,8 @@ echo "✅ Database is up, applying migrations..."
 psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" \
   -f /migrations/001_create_tables.sql \
   -f /migrations/002_add_indexes.sql \
-  -f /migrations/003_create_user_read.sql
+  -f /migrations/003_create_user_read.sql \
+  -f /migrations/004_add_tokens_user.sql
 
 echo "✅ Migrations applied"
 

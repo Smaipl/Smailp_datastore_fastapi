@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_logs_channel_id ON logs (channel_id);
 
 CREATE INDEX IF NOT EXISTS idx_logs_channel_name ON logs (channel_name);
 
-CREATE INDEX IF NOT EXISTS idx_logs_bot_id ON logs (bot_number);
+CREATE INDEX IF NOT EXISTS idx_logs_bot_id ON logs (bot_id);
 
 CREATE INDEX IF NOT EXISTS idx_logs_server_name ON logs (server_name);
 
