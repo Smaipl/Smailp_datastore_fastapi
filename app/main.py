@@ -371,10 +371,13 @@ async def get_logs(
 
         # Build main query
         query = f"""
-            SELECT 
+            SELECT
                 id, created_at, channel_id, user_social_id, user_message, bot_reply,
-                channel_name, bot_id, llm, api_key, tokens_total, tokens_in_source,
-                tokens_out_source, function_error, function_call_params, server_name,
+                channel_name, bot_id, llm, api_key,
+                COALESCE(tokens_total, 0) AS tokens_total,
+                COALESCE(tokens_in_source, 0) AS tokens_in_source,
+                COALESCE(tokens_out_source, 0) AS tokens_out_source,
+                function_error, function_call_params, server_name,
                 COALESCE(tokens_user, 0) AS tokens_user
             FROM logs
             {where_clause}
