@@ -371,7 +371,12 @@ async def get_logs(
 
         # Build main query
         query = f"""
-            SELECT * FROM logs
+            SELECT 
+                id, created_at, channel_id, user_social_id, user_message, bot_reply,
+                channel_name, bot_id, llm, api_key, tokens_total, tokens_in_source,
+                tokens_out_source, function_error, function_call_params, server_name,
+                COALESCE(tokens_user, 0) AS tokens_user
+            FROM logs
             {where_clause}
             ORDER BY {sort_by} {order}
             LIMIT ${len(params) + 1} OFFSET ${len(params) + 2}
