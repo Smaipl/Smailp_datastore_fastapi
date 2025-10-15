@@ -26,7 +26,8 @@ logservice/
 ├── migrations/
 │   ├── 001_create_tables.sql
 │   ├── 002_add_indexes.sql
-│   └── 003_create_user_read.sql
+│   ├── 003_create_user_read.sql
+│   └── 004_add_tokens_user.sql
 ├── .env
 ├── .dockerignore
 ├── Caddyfile
@@ -132,25 +133,26 @@ curl -X POST http://localhost/api/v1/tokens/generate \
 
 Поддерживаются **два формата** тела запроса:
 
-#### 1. Массив (14 элементов строго по порядку):
+#### 1. Массив (15 элементов строго по порядку):
 
 Порядок полей:
 
 ```
-unique_channel_number,
-unique_client_number,
-client_phrase,
-bot_phrase,
+channel_id,
+user_social_id,
+user_message,
+bot_reply,
 channel_name,
-bot_number,
+bot_id,
 llm,
-api_key_masked,
-tokens_spent,
-inbound_without_coefficient,
-outbound_without_coefficient,
+api_key,
+tokens_total,
+tokens_in_source,
+tokens_out_source,
 function_error,
-function_call_and_params,
-server_name
+function_call_params,
+server_name,
+tokens_user
 ```
 
 ##### Пример:
@@ -160,7 +162,7 @@ curl -X POST http://localhost/api/v1/logs \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '[ "ch_001", "client123", "hello", "hi", "telegram", "bot001",
-        "gpt-5", "***", 100, 80, 20, null, "{}", "srv01" ]'
+        "gpt-5", "***", 100, 80, 20, null, "{}", "srv01", 10000 ]'
 ```
 
 #### 2. Объект (именованный JSON):
@@ -170,19 +172,20 @@ curl -X POST http://localhost/api/v1/logs \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
-    "unique_channel_number":"ch_001",
-    "unique_client_number":"client123",
-    "client_phrase":"hello",
-    "bot_phrase":"hi",
+    "channel_id":"ch_001",
+    "user_social_id":"client123",
+    "user_message":"hello",
+    "bot_reply":"hi",
     "channel_name":"telegram",
-    "bot_number":"bot001",
+    "bot_id":"bot001",
     "llm":"gpt-5",
-    "api_key_masked":"***",
-    "tokens_spent":100,
-    "inbound_without_coefficient":80,
-    "outbound_without_coefficient":20,
+    "api_key":"***",
+    "tokens_total":100,
+    "tokens_in_source":80,
+    "tokens_out_source":20,
+    "tokens_user":10000,
     "function_error":null,
-    "function_call_and_params":"{}",
+    "function_call_params":"{}",
     "server_name":"srv01"
   }'
 ```
@@ -258,19 +261,20 @@ curl -X GET "http://localhost/api/v1/logs?from=2025-01-01T00:00:00Z&to=2025-12-3
   "items": [
     {
       "id": 1,
-      "unique_channel_number": "ch_001",
-      "unique_client_number": "client123",
-      "client_phrase": "hello",
-      "bot_phrase": "hi",
+      "channel_id": "ch_001",
+      "user_social_id": "client123",
+      "user_message": "hello",
+      "bot_reply": "hi",
       "channel_name": "telegram",
-      "bot_number": "bot001",
+      "bot_id": "bot001",
       "llm": "gpt-5",
-      "api_key_masked": "***",
-      "tokens_spent": 100,
-      "inbound_without_coefficient": 80,
-      "outbound_without_coefficient": 20,
+      "api_key": "***",
+      "tokens_total": 100,
+      "tokens_in_source": 80,
+      "tokens_out_source": 20,
+      "tokens_user": 10000,
       "function_error": null,
-      "function_call_and_params": "{}",
+      "function_call_params": "{}",
       "server_name": "srv01",
       "created_at": "2025-01-01T12:34:56.789012+00:00"
     },
@@ -293,13 +297,86 @@ http://localhost/docs
 
 ## 📦 Миграции
 
-Схема таблиц описана в `migrations/001_create_tables.sql`.
-При первом запуске они применяются автоматически через скрипт в `Dockerfile`.
+### Миграция 001: создание таблиц и базовых индексов
+```sql
+CREATE TABLE IF NOT EXISTS logs (
+    id BIGSERIAL PRIMARY KEY,
+    channel_id TEXT,
+    user_social_id TEXT,
+    user_message TEXT,
+    bot_reply TEXT,
+    channel_name TEXT,
+    bot_id TEXT,
+    llm TEXT,
+    api_key TEXT,
+    tokens_total BIGINT,
+    tokens_in_source BIGINT,
+    tokens_out_source BIGINT,
+    function_error TEXT,
+    function_call_params TEXT,
+    server_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-Таблицы:
+-- Базовые индексы
+CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_logs_channel_id ON logs (channel_id);
+CREATE INDEX IF NOT EXISTS idx_logs_channel_name ON logs (channel_name);
+CREATE INDEX IF NOT EXISTS idx_logs_bot_id ON logs (bot_id);
+CREATE INDEX IF NOT EXISTS idx_logs_server_name ON logs (server_name);
 
-* `logs` — хранение логов.
-* `api_tokens` — токены с ролями (`admin` / `user`).
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    role VARCHAR(10) NOT NULL,
+    comment TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NULL,
+    created_by TEXT NULL
+);
+```
+
+### Миграция 002: добавление GIN-индексов для полнотекстового поиска
+```sql
+-- Добавляем индексы для полей фильтрации
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Индекс для полей с текстовым поиском
+CREATE INDEX IF NOT EXISTS logs_channel_id_gin_idx ON logs USING gin (channel_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_user_social_id_gin_idx ON logs USING gin (user_social_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_user_message_gin_idx ON logs USING gin (user_message gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_bot_reply_gin_idx ON logs USING gin (bot_reply gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_channel_name_gin_idx ON logs USING gin (channel_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_bot_id_gin_idx ON logs USING gin (bot_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_llm_gin_idx ON logs USING gin (llm gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_function_error_gin_idx ON logs USING gin (function_error gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_server_name_gin_idx ON logs USING gin (server_name gin_trgm_ops);
+```
+
+### Миграция 003: создание пользователя для чтения
+```sql
+-- Создаём пользователя для чтения, если его нет
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'user_read') THEN
+        CREATE ROLE user_read LOGIN PASSWORD 'user_read_password';
+    END IF;
+END
+$$;
+
+-- Раздаём права только на чтение
+GRANT CONNECT ON DATABASE logs_db TO user_read;
+GRANT USAGE ON SCHEMA public TO user_read;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO user_read;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO user_read;
+```
+
+### Миграция 004: добавление поля tokens_user
+```sql
+-- Добавление поля tokens_user в таблицу logs
+ALTER TABLE logs ADD COLUMN tokens_user INTEGER;
+```
 
 ---
 

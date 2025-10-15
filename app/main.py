@@ -49,6 +49,7 @@ POST_ORDER = [
     "function_error",
     "function_call_params",
     "server_name",
+    "tokens_user",
 ]
 
 
@@ -154,9 +155,9 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
                 channel_id, user_social_id, user_message, bot_reply,
                 channel_name, bot_id, llm, api_key, tokens_total,
                 tokens_in_source, tokens_out_source,
-                function_error, function_call_params, server_name
+                function_error, function_call_params, server_name, tokens_user
             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
             ) RETURNING id, created_at
             """,
             log_item.channel_id,
@@ -173,6 +174,7 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
             log_item.function_error,
             log_item.function_call_params,
             log_item.server_name,
+            log_item.tokens_user,
         )
         await conn.execute(
             "DELETE FROM logs WHERE created_at < now() - ($1::int * INTERVAL '1 day')",
@@ -246,6 +248,7 @@ async def get_logs(
         "tokens_total",
         "tokens_in_source",
         "tokens_out_source",
+        "tokens_user",
         "function_error",
         "function_call_params",
         "server_name",

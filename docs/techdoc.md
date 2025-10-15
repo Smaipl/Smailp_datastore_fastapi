@@ -44,7 +44,7 @@
 
 Поддерживаются два формата запроса — массив JSON и именованный объект.
 
-### Формат массива (14 элементов строго по порядку):
+### Формат массива (15 элементов строго по порядку):
 
 ```shell
 curl -X POST "https://example.com/api/v1/logs" \
@@ -64,7 +64,8 @@ curl -X POST "https://example.com/api/v1/logs" \
         20,
         "no errors",
         "last function log",
-        "node-01"
+        "node-01",
+        10000
       ]'
 ```
 
@@ -83,6 +84,7 @@ curl -X POST "https://example.com/api/v1/logs" \
   "tokens_total": 123,
   "tokens_in_source": 45,
   "tokens_out_source": 78,
+  "tokens_user": 10000,
   "function_error": "...",
   "function_call_params": "...",
   "server_name": "..."
@@ -140,6 +142,7 @@ curl -X POST "https://example.com/api/v1/logs" \
 11 — function_error           (Ошибка при выполнении функции)
 12 — function_call_params     (Вызов функции и параметры)
 13 — server_name              (Сервер)
+14 — tokens_user              (Расход токенов пользователя) — numeric
 ```
 
 ### GET /api/v1/logs — получить записи (фильтры + пагинация)
@@ -265,6 +268,7 @@ class LogItem(BaseModel):
     tokens_total: int
     tokens_in_source: int
     tokens_out_source: int
+    tokens_user: int
     function_error: Optional[str] = None
     function_call_params: Optional[str] = None
     server_name: Optional[str] = None
@@ -331,60 +335,85 @@ class HealthCheckResponse(BaseModel):
 
 ## 9. Таблицы (миграции)
 
-1. **logs**
-
+### Миграция 001: создание таблиц и базовых индексов
 ```sql
-CREATE TABLE logs (
-  id BIGSERIAL PRIMARY KEY,
-  channel_id TEXT,
-  user_social_id TEXT,
-  user_message TEXT,
-  bot_reply TEXT,
-  channel_name TEXT,
-  bot_id TEXT,
-  llm TEXT,
-  api_key TEXT,
-  tokens_total BIGINT,
-  tokens_in_source BIGINT,
-  tokens_out_source BIGINT,
-  function_error TEXT,
-  function_call_params TEXT,
-  server_name TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS logs (
+    id BIGSERIAL PRIMARY KEY,
+    channel_id TEXT,
+    user_social_id TEXT,
+    user_message TEXT,
+    bot_reply TEXT,
+    channel_name TEXT,
+    bot_id TEXT,
+    llm TEXT,
+    api_key TEXT,
+    tokens_total BIGINT,
+    tokens_in_source BIGINT,
+    tokens_out_source BIGINT,
+    function_error TEXT,
+    function_call_params TEXT,
+    server_name TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Базовые индексы
-CREATE INDEX idx_logs_created_at ON logs (created_at DESC);
-CREATE INDEX idx_logs_channel_id ON logs (channel_id);
-CREATE INDEX idx_logs_channel_name ON logs (channel_name);
-CREATE INDEX idx_logs_bot_id ON logs (bot_number);
-CREATE INDEX idx_logs_server_name ON logs (server_name);
+CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_logs_channel_id ON logs (channel_id);
+CREATE INDEX IF NOT EXISTS idx_logs_channel_name ON logs (channel_name);
+CREATE INDEX IF NOT EXISTS idx_logs_bot_id ON logs (bot_id);
+CREATE INDEX IF NOT EXISTS idx_logs_server_name ON logs (server_name);
 
--- GIN-индексы для полнотекстового поиска
-CREATE INDEX logs_channel_id_gin_idx ON logs USING gin (channel_id gin_trgm_ops);
-CREATE INDEX logs_user_social_id_gin_idx ON logs USING gin (user_social_id gin_trgm_ops);
-CREATE INDEX logs_user_message_gin_idx ON logs USING gin (user_message gin_trgm_ops);
-CREATE INDEX logs_bot_reply_gin_idx ON logs USING gin (bot_reply gin_trgm_ops);
-CREATE INDEX logs_channel_name_gin_idx ON logs USING gin (channel_name gin_trgm_ops);
-CREATE INDEX logs_bot_id_gin_idx ON logs USING gin (bot_id gin_trgm_ops);
-CREATE INDEX logs_llm_gin_idx ON logs USING gin (llm gin_trgm_ops);
-CREATE INDEX logs_function_error_gin_idx ON logs USING gin (function_error gin_trgm_ops);
-CREATE INDEX logs_server_name_gin_idx ON logs USING gin (server_name gin_trgm_ops);
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    role VARCHAR(10) NOT NULL,
+    comment TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NULL,
+    created_by TEXT NULL
+);
 ```
 
-2. **api_tokens**
-
+### Миграция 002: добавление GIN-индексов для полнотекстового поиска
 ```sql
-CREATE TABLE api_tokens (
-  id bigserial PRIMARY KEY,
-  token_hash text NOT NULL,
-  role varchar(10) NOT NULL, -- 'admin'|'user'
-  comment text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  expires_at timestamptz NULL,
-  created_by text NULL
-);
-CREATE UNIQUE INDEX ux_api_tokens_token_hash ON api_tokens (token_hash);
+-- Добавляем индексы для полей фильтрации
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Индекс для полей с текстовым поиском
+CREATE INDEX IF NOT EXISTS logs_channel_id_gin_idx ON logs USING gin (channel_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_user_social_id_gin_idx ON logs USING gin (user_social_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_user_message_gin_idx ON logs USING gin (user_message gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_bot_reply_gin_idx ON logs USING gin (bot_reply gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_channel_name_gin_idx ON logs USING gin (channel_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_bot_id_gin_idx ON logs USING gin (bot_id gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_llm_gin_idx ON logs USING gin (llm gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_function_error_gin_idx ON logs USING gin (function_error gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS logs_server_name_gin_idx ON logs USING gin (server_name gin_trgm_ops);
+```
+
+### Миграция 003: создание пользователя для чтения
+```sql
+-- Создаём пользователя для чтения, если его нет
+DO
+$$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'user_read') THEN
+        CREATE ROLE user_read LOGIN PASSWORD 'user_read_password';
+    END IF;
+END
+$$;
+
+-- Раздаём права только на чтение
+GRANT CONNECT ON DATABASE logs_db TO user_read;
+GRANT USAGE ON SCHEMA public TO user_read;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO user_read;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO user_read;
+```
+
+### Миграция 004: добавление поля tokens_user
+```sql
+-- Добавление поля tokens_user в таблицу logs
+ALTER TABLE logs ADD COLUMN tokens_user INTEGER;
 ```
 
 ---

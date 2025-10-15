@@ -26,6 +26,7 @@ class LogItem(BaseModel):
     tokens_total: int
     tokens_in_source: int
     tokens_out_source: int
+    tokens_user: int
     function_error: Optional[str] = None
     function_call_params: Optional[str] = None
     server_name: Optional[str] = None
