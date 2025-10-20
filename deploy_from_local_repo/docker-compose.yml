@@ -10,11 +10,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - datastore-network
     expose:
       - "5432"
 
   app:
     image: docker-hub.vgorovetskiy.keenetic.pro/datastore_fastapi-app:2.1.0
+    container_name: data_store_app
     env_file: .env
     depends_on:
       - db
@@ -22,25 +25,15 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
     volumes:
       - ./migrations:/migrations
+    networks:
+      - datastore-network
+      - caddy-network
     expose:
       - "8000"
 
-  caddy:
-    image: docker-hub.vgorovetskiy.keenetic.pro/caddy:2.10.2
-    env_file: .env
-    depends_on:
-      - app
-      - grafana
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
   grafana:
     image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
+    container_name: data_store_grafana
     env_file: .env
     depends_on:
       - db
@@ -57,10 +50,17 @@ services:
       - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN}
       - GF_SERVER_ROOT_URL=https://${GRAFANA_DOMAIN}/
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
+    networks:
+      - datastore-network
+      - caddy-network
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:
   grafana_data:
   grafana_config:
+
+networks:
+  datastore-network:
+    driver: bridge
+  caddy-network:
+    external: true
