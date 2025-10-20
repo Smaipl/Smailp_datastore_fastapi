@@ -17,7 +17,7 @@ services:
 
   app:
     image: docker-hub.vgorovetskiy.keenetic.pro/datastore_fastapi-app:2.1.1
-    container_name: data_storage_app
+    container_name: data_store_app
     env_file: .env
     depends_on:
       - db
@@ -33,7 +33,7 @@ services:
 
   grafana:
     image: docker-hub.vgorovetskiy.keenetic.pro/grafana:12.3.0
-    container_name: data_storage_grafana
+    container_name: data_store_grafana
     env_file: .env
     depends_on:
       - db
