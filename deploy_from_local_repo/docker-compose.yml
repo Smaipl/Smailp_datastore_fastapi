@@ -17,7 +17,6 @@ services:
 
   app:
     image: docker-hub.vgorovetskiy.keenetic.pro/datastore_fastapi-app:2.1.0
-    container_name: data_store_app
     env_file: .env
     depends_on:
       - db
