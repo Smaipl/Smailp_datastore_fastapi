@@ -396,3 +396,8 @@ async def get_logs(
         items.append(item)
 
     return LogsListResponse(page=page, page_size=page_size, total=total, items=items)
+
+
+from .sys_api import register_sys_api
+
+register_sys_api(app)
