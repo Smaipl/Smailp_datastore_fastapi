@@ -1,7 +1,7 @@
 import logging
 
 
-log = logging.getLogger("data_store_app")
+log = logging.getLogger("datastore")
 
 
 def dbg(*args, **kwargs):
