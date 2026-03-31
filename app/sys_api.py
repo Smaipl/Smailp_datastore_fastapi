@@ -4,6 +4,7 @@ from .auth import get_token_info
 from .schemas import LogCreateResponse
 from .log import inf, dbg
 from datetime import datetime
+from typing import Any
 
 
 async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
