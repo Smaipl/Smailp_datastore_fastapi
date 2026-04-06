@@ -82,7 +82,7 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
             INSERT INTO system_logs (
                 timestamp, host, logger, level, filename, funcname, lineno, message, path
             ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
+                $1,$2,$3,$4,$5,$6,$7,$8,$9
             )
             """,
             values
