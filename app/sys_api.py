@@ -61,15 +61,14 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
     values = [
         (
             log["timestamp"],
-            log["name"],
+            log["host"],
+            log["logger"],
+            log["level"],
             log["filename"],
             log["funcname"],
             log["lineno"],
             log["message"],
-            log["host"],
-            log["level"],
-            log["logger"],
-            log["path"],
+            log["path"]
         )
         for log in logs
     ]
@@ -81,7 +80,7 @@ async def create_log(request: Any = Body(...), auth=Depends(get_token_info)):
         await conn.executemany(
             """
             INSERT INTO system_logs (
-                timestamp, name, filename, funcname, lineno, message, host, level, logger, path
+                timestamp, host, logger, level, filename, funcname, lineno, message, path
             ) VALUES (
                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10
             )
