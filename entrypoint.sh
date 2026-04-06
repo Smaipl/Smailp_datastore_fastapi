@@ -9,7 +9,7 @@ done
 echo "✅ Database is up, applying migrations..."
 
 # Применяем все миграции с продолжением при ошибках
-for migration_file in $(ls /migrations/*.sql | sort); do
+for migration_file in $(ls ./migrations/*.sql | sort); do
   echo "Applying ${migration_file}..."
   psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" \
     -v ON_ERROR_STOP=0 -f "${migration_file}"
